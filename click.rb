@@ -1,49 +1,46 @@
 require 'rumouse'
 
-def click_with_variance
-  mouse_click(alc_location)
+def click_with_variance(location)
+  mouse_click(location)
   sleep_variance
 end
 
-def double_click_with_variance
-  click_with_variance
-  click_with_variance
+def double_click_with_variance(offset = 0)
+  click_with_variance(alc_location)
+  click_with_variance(location_from_offset(offset))
   double_click_wait
 end
 
 def double_click_wait
-  sleep 2
-  3.times { sleep_variance } if rand(8) == 0
+  sleep 2.8
 end
 
 def sleep_variance
-  variance = rand(25) / 100.to_f
-  sleep variance
+  variance = rand(3) / 100.to_f
+  fixed = 0.1
+  sleep(variance + fixed)
 end
 
-def high_alch(time = 1)
+def high_alch(time = 1, offset = 0, total = 0)
   time = time.to_i
   puts "alching #{time} time(s)"
 
-  click_magic_bag
-
   time.times do |num|
+    rem = time - num
+
     if moved_mouse?
-      pause_with_remaining(time - num)
-      return
+      pause_with_remaining(rem)
+      print_time_remaining(total)
     end
 
-    double_click_with_variance
+    puts "remaining: #{rem}" if rem % 25 == 0
+
+    click_magic_bag
+    double_click_with_variance(offset)
+    click_camelot if should_click_camelot?
+
+    total -= 1
   end
-
-  high_alch_more?(time)
-end
-
-def high_alch_more?(time)
-  puts "Finished alching #{time} time(s). Enter number of times to continue high alching."
-  puts "press Ctrl+Z(windows) or Ctrl+D(unix) and then Enter to continue alching"
-  num = $stdin.read
-  high_alch(num)
 end
 
 def click_magic_bag
@@ -54,6 +51,21 @@ def click_magic_bag
 
   mouse_click([magic_bag_x, magic_bag_y])
   sleep_variance
+end
+
+def click_camelot
+  x = -26
+  y = -30
+  camelot_x = alc_location[0] + x
+  camelot_y = alc_location[1] + y
+
+  mouse_click([camelot_x, camelot_y])
+  sleep 3
+  sleep_variance
+end
+
+def should_click_camelot?
+  @camelot
 end
 
 def moved_mouse?
@@ -88,11 +100,10 @@ def pause_with_remaining(num)
     break if mouse_back?
     sleep 1
   end
-  high_alch(num)
 end
 
-def alc_location
-  [@location[:x], @location[:y]]
+def alc_location(x = 0, y = 0)
+  [(@location[:x] + x), (@location[:y] + y)]
 end
 
 def mouse_click(location)
@@ -111,22 +122,54 @@ def track_location
   loop do
     @location = @mouse.position
     puts @location
-    break if Time.now - start_time > 3
+    break if Time.now - start_time > 5
     sleep 0.5
   end
 
   puts "finished tracking at #{@location}"
 end
 
+def location_from_offset(offset)
+  mapping = {
+      3 => alc_location(0, -99),
+      2 => alc_location(-50, -99),
+      1 => alc_location(-90, -99),
+      0 => alc_location(-130, -99),
+
+      7 => alc_location(0, -66),
+      6 => alc_location(-50, -66),
+      5 => alc_location(-90, -66),
+      4 => alc_location(-130, -66),
+  }
+
+  mapping[offset]
+end
+
+def print_time_remaining(total)
+  puts "Estimated time: #{Time.at(total * 3).utc.strftime("%H:%M:%S")}"
+end
+
+total = ARGV.map(&:to_i).inject(&:+)
+puts "Alching: #{total} item(s)"
+print_time_remaining(total)
+
+@camelot = false
 @mouse = RuMouse.new
 track_location
-high_alch ARGV[0]
 
+ARGV.map.with_index do |num, i|
+  high_alch(num, i, total)
+  total -= num.to_i
+  print_time_remaining(total)
+end
 
-{'green d' =>  '4401',
-'blue d' => '5390',
-'add plate' => '9620',
-'rune axe' => '7401',
-'red d' => '6501',
-'back d' => '7720',
-'rune d' => '4551'}
+{
+  'green d' =>  '4401',
+  'blue d' => '5390',
+  'red d' => '6501',
+  'black d' => '7720',
+  'rune d' => '4551',
+  'rune axe' => '7401',
+  'adamant plate' => '9580',
+  'rune med' => '11202',
+}
