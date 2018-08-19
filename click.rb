@@ -118,10 +118,6 @@ def track_location
   calibration_time = 5
   counter = calibration_time
 
-  puts "Calibrating mouse location for #{calibration_time} second(s)"
-  puts "Move mouse to hover over high alch spell and leave it there"
-  puts "\n"
-
   start_time = Time.now
   @location = nil
 
@@ -159,18 +155,34 @@ def print_time_remaining(total)
   puts "Est. finish time: #{(Time.now + total_seconds).strftime("%l:%M:%S:%p")}"
 end
 
-total = ARGV.map(&:to_i).inject(&:+)
-
 @camelot = false
+
+puts "Enter in number of times to high alch"
+puts "List should be in order of inv spot (left to right, top to bottom)"
+puts "Support is for 8 inv slots"
+puts "Eg."
+puts "10 20 30 40"
+puts "\n"
+
+input = $stdin.gets.chomp
+input = input.split(' ')
+total = input.map(&:to_i).inject(&:+)
+
+puts "Press enter to calibrate mouse location for 5 second(s)"
+puts "Move mouse to hover over high alch spell and leave it there"
+puts "\n"
+
+$stdin.gets.chomp
+
 @mouse = RuMouse.new
 track_location
 puts "\n"
 
-puts "Alching: #{total} item(s)"
+puts "Alching total: #{total} item(s)"
 print_time_remaining(total)
 puts "\n"
 
-ARGV.map.with_index do |num, i|
+input.map.with_index do |num, i|
   high_alch(num, i, total)
   total -= num.to_i
   print_time_remaining(total)
@@ -186,3 +198,6 @@ end
   'adamant plate' => '9580',
   'rune med' => '11202',
 }
+
+# Build command
+# ocra click.rb --add-all-core --gem-full --no-dep-run --gemfile Gemfile
