@@ -33,7 +33,7 @@ def high_alch(time = 1, offset = 0, total = 0)
       print_time_remaining(total)
     end
 
-    puts "remaining: #{rem}" if rem % 25 == 0
+    puts "remaining: #{rem} time(s)" if rem % 25 == 0
 
     click_magic_bag
     double_click_with_variance(offset)
@@ -115,18 +115,26 @@ def mouse_move(location)
 end
 
 def track_location
-  puts "Move mouse to hover over high alch spell"
+  calibration_time = 5
+  counter = calibration_time
+
+  puts "Calibrating mouse location for #{calibration_time} second(s)"
+  puts "Move mouse to hover over high alch spell and leave it there"
+  puts "\n"
+
   start_time = Time.now
   @location = nil
 
   loop do
     @location = @mouse.position
-    puts @location
-    break if Time.now - start_time > 5
-    sleep 0.5
+    puts "#{counter}, tracking at: #{@location}"
+
+    break if Time.now - start_time > calibration_time
+    sleep 1
+    counter -= 1
   end
 
-  puts "finished tracking at #{@location}"
+  puts "finished tracking at: #{@location}"
 end
 
 def location_from_offset(offset)
@@ -146,16 +154,21 @@ def location_from_offset(offset)
 end
 
 def print_time_remaining(total)
-  puts "Estimated time: #{Time.at(total * 3).utc.strftime("%H:%M:%S")}"
+  total_seconds = total * 3
+  puts "Est. remaining time: #{Time.at(total_seconds).utc.strftime("%H:%M:%S")}"
+  puts "Est. finish time: #{(Time.now + total_seconds).strftime("%l:%M:%S:%p")}"
 end
 
 total = ARGV.map(&:to_i).inject(&:+)
-puts "Alching: #{total} item(s)"
-print_time_remaining(total)
 
 @camelot = false
 @mouse = RuMouse.new
 track_location
+puts "\n"
+
+puts "Alching: #{total} item(s)"
+print_time_remaining(total)
+puts "\n"
 
 ARGV.map.with_index do |num, i|
   high_alch(num, i, total)
